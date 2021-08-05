@@ -123,11 +123,6 @@ func (job *job) process() {
 
 func (job *job) dispatch() {
 	for _, url := range job.urls {
-		url = strings.TrimSpace(url)
-		if !strings.HasPrefix(url, "http:") && !strings.HasPrefix(url, "https:") {
-			url = "http://" + url
-		}
-
 		job.urlChan <- url
 	}
 }
@@ -148,19 +143,24 @@ func (job *job) spawnWorker(num int) {
 	}
 }
 
-func parseUrl(url string, withTitle bool) (favicon, title string) {
+func parseUrl(rawurl string, withTitle bool) (favicon, title string) {
+	rawurl = strings.TrimSpace(rawurl)
+	if !strings.HasPrefix(rawurl, "http:") && !strings.HasPrefix(rawurl, "https:") {
+		rawurl = "http://" + rawurl
+	}
+
 	var cached bool
 	if withTitle {
-		if title, favicon, cached = readTitle(url); cached {
+		if title, favicon, cached = readTitle(rawurl); cached {
 			return
 		}
 	} else {
-		if favicon, cached = readFavicon(getHost(url)); cached {
+		if favicon, cached = readFavicon(getHost(rawurl)); cached {
 			return
 		}
 	}
 
-	return getFaviconAndTitle(url)
+	return getFaviconAndTitle(rawurl)
 }
 
 func getFaviconAndTitle(url string) (favicon, title string) {
