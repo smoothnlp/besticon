@@ -25,6 +25,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 
+	"github.com/PuerkitoBio/goquery"
 	_ "github.com/mat/besticon/ico"
 
 	"github.com/mat/besticon/colorfinder"
@@ -58,6 +59,20 @@ type IconFinder struct {
 	HostOnlyDomains []string
 	KeepImageBytes  bool
 	icons           []Icon
+}
+
+func (f *IconFinder) FetchIconsWithTitle(url string) (string, *Icon, error) {
+	title, icons, err := fetchIconsWithTitle(url)
+	if err != nil {
+		return title, nil, err
+	}
+
+	sortIconsByCustom(icons)
+	if len(icons) > 0 {
+		return title, &icons[0], err
+	}
+
+	return title, nil, err
 }
 
 func (f *IconFinder) FetchIcons(url string) ([]Icon, error) {
@@ -171,6 +186,42 @@ func includesString(arr []string, str string) bool {
 		}
 	}
 	return false
+}
+
+func fetchIconsWithTitle(siteURL string) (string, []Icon, error) {
+	var links []string
+	var title string
+
+	html, urlAfterRedirect, e := fetchHTML(siteURL)
+	if e == nil {
+		var doc *goquery.Document
+		if doc, e = goquery.NewDocumentFromReader(bytes.NewReader(html)); e != nil || doc == nil {
+			return "", nil, errors.New("besticon: could not parse html")
+		}
+
+		if title, e = parseTitle(doc); e != nil {
+			log.Println("parse title failed: ", e)
+		}
+
+		// Search HTML for icons
+		links, e = parseIconLinks(urlAfterRedirect, doc)
+		if e != nil {
+			return title, nil, e
+		}
+	} else {
+		// Unable to fetch the response or got a bad HTTP status code. Try default
+		// icon paths. https://github.com/mat/besticon/discussions/47
+		links, e = defaultIconURLs(siteURL)
+		if e != nil {
+			return "", nil, e
+		}
+	}
+
+	icons := fetchAllIcons(links)
+	icons = rejectBrokenIcons(icons)
+	// sortIcons(icons, true)
+
+	return title, icons, nil
 }
 
 func fetchIcons(siteURL string) ([]Icon, error) {

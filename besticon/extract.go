@@ -34,6 +34,10 @@ func findIconLinks(siteURL *url.URL, html []byte) ([]string, error) {
 		return nil, e
 	}
 
+	return parseIconLinks(siteURL, doc)
+}
+
+func parseIconLinks(siteURL *url.URL, doc *goquery.Document) ([]string, error) {
 	baseURL := determineBaseURL(siteURL, doc)
 
 	// Use a map to avoid dups
@@ -61,6 +65,36 @@ func findIconLinks(siteURL *url.URL, html []byte) ([]string, error) {
 	sort.Strings(result)
 
 	return result, nil
+}
+
+func parseTitle(doc *goquery.Document) (title string, err error) {
+	doc.Find("title").Each(func(i int, s *goquery.Selection) {
+		if title == "" {
+			title = strings.TrimSpace(s.Text())
+		}
+	})
+
+	if title != "" {
+		return
+	}
+
+	doc.Find("h1").Each(func(i int, s *goquery.Selection) {
+		if title == "" {
+			title = strings.TrimSpace(s.Text())
+		}
+	})
+
+	if title != "" {
+		return
+	}
+
+	doc.Find("h2").Each(func(i int, s *goquery.Selection) {
+		if title == "" {
+			title = strings.TrimSpace(s.Text())
+		}
+	})
+
+	return "", nil
 }
 
 // What is the baseURL for this doc?

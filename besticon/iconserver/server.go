@@ -260,6 +260,8 @@ func startServer(port string, address string) {
 	registerHandler("/popular", popularHandler)
 	registerHandler("/allicons.json", alliconsHandler)
 	registerHandler("/lettericons/", lettericonHandler)
+	registerHandler("/single", iconSingleHandler)
+	registerHandler("/batch", iconBatchHandler)
 
 	serveAsset("/pure-0.5.0-min.css", "besticon/iconserver/assets/pure-0.5.0-min.css", oneYear)
 	serveAsset("/grids-responsive-0.5.0-min.css", "besticon/iconserver/assets/grids-responsive-0.5.0-min.css", oneYear)
